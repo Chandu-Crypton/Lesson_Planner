@@ -3,11 +3,10 @@ import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import jsPDF from "jspdf";
 
-
 export default function LessonDisplay({ lesson }) {
   const printRef = useRef();
 
-  
+ 
   const [editableLesson, setEditableLesson] = useState({
     summary: "",
     subject: "",
@@ -22,13 +21,13 @@ export default function LessonDisplay({ lesson }) {
     notes: "",
   });
 
-  
+ 
   const parseLesson = (text) => {
     if (!text) return {};
 
     const parsedLesson = {};
 
-    
+   
     const regexPatterns = {
       summary: /\*\*1\. Summary\*\*\s*\n*([\s\S]+?)(?=\*\*2\.|$)/i,
       subject: /\*\*2\. Subject\*\*\s*\n*([\s\S]+?)(?=\*\*3\.|$)/i,
@@ -37,12 +36,12 @@ export default function LessonDisplay({ lesson }) {
       subtopics: /\*\*Subtopics:\*\*\s*\n*([\s\S]+?)(?=\*\*5\.|$)/i,
       materials: /\*\*5\. Materials Needed\*\*\s*\n*([\s\S]+?)(?=\*\*6\.|$)/i,
       objectives: /\*\*6\. Learning Objectives\*\*\s*\n*([\s\S]+?)(?=\*\*7\.|$)/i,
-      outline: /\*\*7\. Lesson Outline\*\*\s*\n*([\s\S]+?)(?=\*\*8\.|$)/i, // Capture Lesson Outline
+      outline: /\*\*7\. Lesson Outline\*\*\s*\n*([\s\S]+?)(?=\*\*8\.|$)/i, 
       assessment: /\*\*8\. Assessment\*\*\s*\n*([\s\S]+?)(?=\*\*9\.|$)/i,
       notes: /\*\*9\. Notes\*\*\s*\n*([\s\S]+?)(?=\n|$)/i,
     };
 
-    
+   
     Object.keys(regexPatterns).forEach((key) => {
       const match = text.match(regexPatterns[key]);
       parsedLesson[key] = match ? match[1].trim() : "No data available.";
@@ -53,19 +52,19 @@ export default function LessonDisplay({ lesson }) {
       parsedLesson.outlineTable = parsedLesson.outline
         .split("\n")
         .map((line) => {
-          
+         
           const durationMatch = line.match(/\((\d+)\s*minutes?\)/i);
           const duration = durationMatch ? `${durationMatch[1]} minutes` : "";
 
-        
+         
           const description = line
-            .replace(/^\*\s*/, "") 
+            .replace(/^\*\s*/, "")
             .replace(/\s*\(.*?\)/, "") 
             .trim();
 
           return { duration, description };
         })
-        .filter((row) => row.duration && row.description); // Filter out empty rows
+        .filter((row) => row.duration && row.description); 
     } else {
       parsedLesson.outlineTable = [];
     }
@@ -79,131 +78,143 @@ export default function LessonDisplay({ lesson }) {
     setEditableLesson(parsedLesson);
   }, [lesson]);
 
+  
+  const handleInputChange = (e, key) => {
+    setEditableLesson({
+      ...editableLesson,
+      [key]: e.target.value,
+    });
+  };
 
+  
+  const handleTableChange = (index, field, value) => {
+    const updatedTable = [...editableLesson.outlineTable];
+    updatedTable[index][field] = value;
+    setEditableLesson({
+      ...editableLesson,
+      outlineTable: updatedTable,
+    });
+  };
+
+ 
   const handleDownloadPDF = () => {
-    
     const doc = new jsPDF({
       orientation: "landscape",
       unit: "mm",
       format: "a4", 
     });
-  
 
+   
     doc.setFont("helvetica");
     doc.setFontSize(12);
+
   
-    
     const stripMarkdown = (text) => {
       return text
         .replace(/\*\*/g, "") 
         .replace(/\*/g, "") 
         .replace(/- /g, "") 
-        .replace(/=/g, "")
+        .replace(/=/g, "") 
         .replace(/</g, "") 
-        .replace(/>/g, "");
+        .replace(/>/g, ""); 
     };
-  
-    
+
+   
     const addTextWithPageBreak = (text, x, yOffset, lineHeight = 12, maxWidth = 280) => {
       const pageHeight = doc.internal.pageSize.height;
       if (yOffset > pageHeight - 20) {
         doc.addPage(); 
         yOffset = 20;
       }
-  
+
      
       const lines = doc.splitTextToSize(text, maxWidth);
       doc.text(lines, x, yOffset);
-  
-      
+
+    
       return yOffset + lines.length * lineHeight;
     };
-  
+
     let yOffset = 10; 
-  
+
    
     doc.setFontSize(18);
     doc.setTextColor(0, 0, 0); 
     yOffset = addTextWithPageBreak(" Lesson Plan", 10, yOffset, 18);
-  
-    
-    yOffset = addTextWithPageBreak(` Learning Summary:`, 10, yOffset);
-    editableLesson.summary.split("\n").forEach((line) => {
-      yOffset = addTextWithPageBreak(`- ${stripMarkdown(line)}`, 15, yOffset);
-    });
 
-    yOffset = addTextWithPageBreak(`Subject:`, 10, yOffset);
-    editableLesson.subject.split("\n").forEach((line) => {
-      yOffset = addTextWithPageBreak(`- ${stripMarkdown(line)}`, 15, yOffset);
-    });
   
-  
+    yOffset = addTextWithPageBreak(` Summary: ${stripMarkdown(editableLesson.summary)}`, 10, yOffset);
+
+   
+    yOffset = addTextWithPageBreak(` Subject: ${stripMarkdown(editableLesson.subject)}`, 10, yOffset);
+
    
     yOffset = addTextWithPageBreak(` Grade Level: ${stripMarkdown(editableLesson.grade)}`, 10, yOffset);
-  
-    yOffset = addTextWithPageBreak(` Main Topic:`, 10, yOffset);
-    editableLesson.mainTopic.split("\n").forEach((line) => {
-      yOffset = addTextWithPageBreak(`- ${stripMarkdown(line)}`, 15, yOffset);
-    });
 
-    yOffset = addTextWithPageBreak(`Materials:`, 10, yOffset);
+   
+    yOffset = addTextWithPageBreak(` Main Topic: ${stripMarkdown(editableLesson.mainTopic)}`, 10, yOffset);
+
+    
+    yOffset = addTextWithPageBreak(` Materials Needed:`, 10, yOffset);
     editableLesson.materials.split("\n").forEach((line) => {
       yOffset = addTextWithPageBreak(`- ${stripMarkdown(line)}`, 15, yOffset);
     });
+
     
     yOffset = addTextWithPageBreak(` Learning Objectives:`, 10, yOffset);
     editableLesson.objectives.split("\n").forEach((line) => {
       yOffset = addTextWithPageBreak(`- ${stripMarkdown(line)}`, 15, yOffset);
     });
-  
 
+    
     yOffset = addTextWithPageBreak(` Lesson Outline:`, 10, yOffset);
     editableLesson.outlineTable.forEach((row) => {
       yOffset = addTextWithPageBreak(`- Duration: ${row.duration}`, 15, yOffset);
       yOffset = addTextWithPageBreak(`  Description: ${row.description}`, 15, yOffset);
     });
-  
-    yOffset = addTextWithPageBreak(` Assessment: ${stripMarkdown(editableLesson.assessment)}`, 10, yOffset);
-  
-    yOffset = addTextWithPageBreak(` Notes: ${stripMarkdown(editableLesson.notes)}`, 10, yOffset);
-  
+
     
+    yOffset = addTextWithPageBreak(` Assessment: ${stripMarkdown(editableLesson.assessment)}`, 10, yOffset);
+
+   
+    yOffset = addTextWithPageBreak(` Notes: ${stripMarkdown(editableLesson.notes)}`, 10, yOffset);
+
+   
     doc.save("lesson-plan.pdf");
   };
+
   return (
-    <>
-    
     <Card className="p-8 bg-white dark:bg-gray-900 shadow-xl rounded-lg border border-gray-300 dark:border-gray-700 mt-6">
-      
       <div ref={printRef} className="text-gray-900 dark:text-gray-200">
-       
+      
         <h2 className="text-3xl font-bold mb-6 text-center text-gray-800 dark:text-gray-100">
           📚 Lesson Plan
         </h2>
 
+       
         <div className="mb-6 p-4 rounded-md bg-gray-100 dark:bg-gray-800 shadow-sm">
           <h3 className="text-xl font-semibold mb-2 text-blue-600 dark:text-blue-400">Lesson Overview</h3>
           <textarea
             className="w-full p-2 border rounded-md"
             value={editableLesson.summary}
-            readOnly
+            onChange={(e) => handleInputChange(e, "summary")}
             placeholder="Enter summary"
           />
         </div>
 
-        
+      
         <div className="mb-6 p-4 rounded-md bg-gray-100 dark:bg-gray-800 shadow-sm">
           <h3 className="text-xl font-semibold mb-2 text-blue-600 dark:text-blue-400">Subject & Grade Level</h3>
           <input
             className="w-full p-2 border rounded-md mb-2"
             value={editableLesson.subject}
-            readOnly
+            onChange={(e) => handleInputChange(e, "subject")}
             placeholder="Enter subject"
           />
           <input
             className="w-full p-2 border rounded-md"
             value={editableLesson.grade}
-            readOnly
+            onChange={(e) => handleInputChange(e, "grade")}
             placeholder="Enter grade level"
           />
         </div>
@@ -214,13 +225,13 @@ export default function LessonDisplay({ lesson }) {
           <input
             className="w-full p-2 border rounded-md mb-2"
             value={editableLesson.mainTopic}
-            readOnly
+            onChange={(e) => handleInputChange(e, "mainTopic")}
             placeholder="Enter main topic"
           />
           <textarea
             className="w-full p-2 border rounded-md"
             value={editableLesson.subtopics}
-            readOnly
+            onChange={(e) => handleInputChange(e, "subtopics")}
             placeholder="Enter subtopics (one per line)"
             style={{ height: "100px" }}
           />
@@ -232,7 +243,7 @@ export default function LessonDisplay({ lesson }) {
           <textarea
             className="w-full p-2 border rounded-md"
             value={editableLesson.materials}
-            readOnly
+            onChange={(e) => handleInputChange(e, "materials")}
             placeholder="Enter materials needed (one per line)"
             style={{ height: "150px" }}
           />
@@ -244,7 +255,7 @@ export default function LessonDisplay({ lesson }) {
           <textarea
             className="w-full p-2 border rounded-md"
             value={editableLesson.objectives}
-            readOnly
+            onChange={(e) => handleInputChange(e, "objectives")}
             placeholder="Enter learning objectives (one per line)"
             style={{ height: "150px" }}
           />
@@ -267,7 +278,7 @@ export default function LessonDisplay({ lesson }) {
                     <input
                       className="w-full p-1 border rounded-md"
                       value={row.duration}
-                      readOnly
+                      onChange={(e) => handleTableChange(index, "duration", e.target.value)}
                       placeholder="Duration"
                     />
                   </td>
@@ -275,7 +286,7 @@ export default function LessonDisplay({ lesson }) {
                     <input
                       className="w-full p-1 border rounded-md"
                       value={row.description}
-                      readOnly
+                      onChange={(e) => handleTableChange(index, "description", e.target.value)}
                       placeholder="Description"
                     />
                   </td>
@@ -285,31 +296,31 @@ export default function LessonDisplay({ lesson }) {
           </table>
         </div>
 
-      
+       
         <div className="mb-6 p-6 rounded-md bg-gray-100 dark:bg-gray-800 shadow-sm">
           <h3 className="text-xl font-semibold mb-2 text-blue-600 dark:text-blue-400">Assessment</h3>
           <textarea
             className="w-full p-2 border rounded-md"
             value={editableLesson.assessment}
-            readOnly
+            onChange={(e) => handleInputChange(e, "assessment")}
             placeholder="Enter assessment details"
             style={{ height: "150px" }}
           />
         </div>
 
-      
+        
         <div className="mb-6 p-4 rounded-md bg-gray-100 dark:bg-gray-800 shadow-sm">
           <h3 className="text-xl font-semibold mb-2 text-blue-600 dark:text-blue-400">Notes & Observations</h3>
           <textarea
             className="w-full p-2 border rounded-md"
             value={editableLesson.notes}
-            readOnly
+            onChange={(e) => handleInputChange(e, "notes")}
             placeholder="Enter notes"
           />
         </div>
       </div>
 
-    
+  
       <Button
         className="mt-6 w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-md text-lg font-semibold transition-all duration-300"
         onClick={handleDownloadPDF}
@@ -317,6 +328,8 @@ export default function LessonDisplay({ lesson }) {
         📄 Download as PDF
       </Button>
     </Card>
-    </>
   );
 }
+
+
+
