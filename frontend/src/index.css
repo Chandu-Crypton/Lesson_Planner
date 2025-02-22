@@ -1,0 +1,26 @@
+@import "tailwindcss";
+/* Light mode styles (default) */
+body {
+    background-color: white;
+    color: black;
+  }
+  
+  input,
+  textarea {
+    background-color: white;
+    color: black;
+    border: 1px solid #ccc;
+  }
+  
+  /* Dark mode styles */
+  body.dark {
+    background-color: #1a202c; /* Dark gray */
+    color: #f7fafc; /* Light gray */
+  }
+  
+  body.dark input,
+  body.dark textarea {
+    background-color: #2d3748; /* Darker gray */
+    color: #f7fafc; /* Light gray */
+    border: 1px solid #4a5568; /* Darker border */
+  }
